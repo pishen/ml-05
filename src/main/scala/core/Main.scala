@@ -27,7 +27,7 @@ object Main {
         val gamma = 1.0 / (2 * pow(sigma, 2))
         val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
           .split("\n").last
-        val ein = Seq("./svm-predict", "train", "train.m", "predict").!!
+        val ein = Seq("./svm-predict", "train", "train.m", "predict").!!.split("\n").last
         val ecv = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
           .split("\n").last
         (sigma, cost, nSV, ein, ecv)
