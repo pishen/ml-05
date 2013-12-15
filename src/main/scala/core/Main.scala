@@ -21,39 +21,74 @@ object Main {
         case (f, i) => (i + 1) + ":" + f
       }.mkString(" ")
       label + " " + features
-    })
+    }).toSeq
     Resource.fromWriter(new FileWriter("train")).writeStrings(trainLines, "\n")
-    
-    //Seq("./svm-train", "-s", "3" "-c", "0.001", "-g", (1.0 / (2 * pow(0.125, 2))).toString, "train", "train.m").!
 
     val sigmas = Seq(0.125, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
-    val res = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
+    val pb14 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
-        //pb14
-        svm(sigma, cost)
-        //pb15
+        val gamma = 1.0 / (2 * pow(sigma, 2))
+        val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
+          .split("\n").last.split(" ").last.toInt
+        val ein = Seq("./svm-predict", "train", "train.m", "predict").!!
+          .split("\n").last.split(" ").find(_.contains("%")).get.init.toDouble / 100
+        val ecv = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
+          .split("\n").last.split(" ").last.init.toDouble / 100
+        TestCase(sigma, cost, nSV, ein, ecv)
       }
-    }.flatMap {
-      case (sigma, cost, nSV, ein, ecv) => Seq(
-        "================",
-        "sigma: " + sigma,
-        "cost: " + cost,
-        "nSV: " + nSV,
-        "Ein: " + ein,
-        "Ecv: " + ecv)
     }
-    Resource.fromWriter(new FileWriter("pb14")).writeStrings(res, "\n")
+    val pb15 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
+      case (sigma, cost) => {
+        val gamma = 1.0 / (2 * pow(sigma, 2))
+        val svmCmd = Seq("./svm-train", "-s", "3", "-p", "0.01", "-c", cost.toString, "-g", gamma.toString)
+        val nSV = (svmCmd ++ Seq("train", "train.m")).!!
+          .split("\n").last.split("[, ]")(2).toInt
+        val ein = {
+          assert(Seq("./svm-predict", "train", "train.m", "predict").! == 0)
+          val predicts = Resource.fromFile("predict").lines().map(l => if (l.toDouble > 0.0) 1 else -1).toSeq
+          val ys = trainLines.map(_.split(" ").head.toInt)
+          predicts.zip(ys).count(p => p._1 != p._2) / predicts.size.toDouble
+        }
+        val ecv = {
+          //TODO shuffle?
+          val subsets = trainLines.grouped((trainLines.size / 5.0).ceil.toInt).toSeq
+          subsets.indices.map(i => {
+            val vld = subsets(i)
+            val subTrain = subsets.zipWithIndex.filter(_._2 != i).map(_._1).reduce(_ ++ _)
+            Resource.fromWriter(new FileWriter("sub-train")).writeStrings(subTrain, "\n")
+            assert((svmCmd ++ Seq("sub-train", "sub-train.m")).! == 0)
+            Resource.fromWriter(new FileWriter("validate")).writeStrings(vld, "\n")
+            assert(Seq("./svm-predict", "validate", "sub-train.m", "predict").! == 0)
+            val predicts = Resource.fromFile("predict").lines().map(l => if (l.toDouble > 0.0) 1 else -1).toSeq
+            val ys = vld.map(_.split(" ").head.toInt)
+            predicts.zip(ys).count(p => p._1 != p._2) / predicts.size.toDouble
+          }).sum / subsets.size
+        }
+        TestCase(sigma, cost, nSV, ein, ecv)
+      }
+    }
+
+    def writeRes(s: Seq[TestCase], filename: String) = {
+      val res = s.flatMap(t => {
+        "================" ::
+          "sigma: " + t.sigma ::
+          "cost: " + t.cost ::
+          "nSV: " + t.nSV ::
+          "Ein: " + t.ein ::
+          "Ecv: " + t.ecv ::
+          Nil
+      })
+      Resource.fromWriter(new FileWriter(filename)).writeStrings(res, "\n")
+    }
+    writeRes(pb14, "pb14")
+    writeRes(pb15, "pb15")
   }
 
+  case class TestCase(sigma: Double, cost: Double, nSV: Int, ein: Double, ecv: Double)
+
   def svm(sigma: Double, cost: Double) = {
-    val gamma = 1.0 / (2 * pow(sigma, 2))
-    val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
-      .split("\n").last
-    val ein = Seq("./svm-predict", "train", "train.m", "predict").!!.split("\n").last
-    val ecv = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
-      .split("\n").last
-    (sigma, cost, nSV, ein, ecv)
+
   }
 
   def pb13() = {
