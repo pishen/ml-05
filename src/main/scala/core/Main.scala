@@ -10,27 +10,29 @@ import sys.process._
 object Main {
 
   def main(args: Array[String]): Unit = {
+    pb14to16()
+  }
+
+  def pb14to16() = {
     val trainLines = Resource.fromFile("hw5_14_train.dat").lines().map(line => {
       val tokens = line.split(" ").filter(_ != "")
       val label = tokens.last.toInt
-      val features = tokens.init.map(_.toDouble).zipWithIndex.filter(_._1 > 0.0).map {
+      val features = tokens.init.map(_.toDouble).zipWithIndex.filter(_._1 != 0.0).map {
         case (f, i) => (i + 1) + ":" + f
       }.mkString(" ")
       label + " " + features
     })
     Resource.fromWriter(new FileWriter("train")).writeStrings(trainLines, "\n")
+    
+    //Seq("./svm-train", "-s", "3" "-c", "0.001", "-g", (1.0 / (2 * pow(0.125, 2))).toString, "train", "train.m").!
 
     val sigmas = Seq(0.125, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
     val res = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
-        val gamma = 1.0 / (2 * pow(sigma, 2))
-        val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
-          .split("\n").last
-        val ein = Seq("./svm-predict", "train", "train.m", "predict").!!.split("\n").last
-        val ecv = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
-          .split("\n").last
-        (sigma, cost, nSV, ein, ecv)
+        //pb14
+        svm(sigma, cost)
+        //pb15
       }
     }.flatMap {
       case (sigma, cost, nSV, ein, ecv) => Seq(
@@ -42,6 +44,16 @@ object Main {
         "Ecv: " + ecv)
     }
     Resource.fromWriter(new FileWriter("pb14")).writeStrings(res, "\n")
+  }
+
+  def svm(sigma: Double, cost: Double) = {
+    val gamma = 1.0 / (2 * pow(sigma, 2))
+    val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
+      .split("\n").last
+    val ein = Seq("./svm-predict", "train", "train.m", "predict").!!.split("\n").last
+    val ecv = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
+      .split("\n").last
+    (sigma, cost, nSV, ein, ecv)
   }
 
   def pb13() = {
