@@ -22,7 +22,7 @@ object Main {
 
     val sigmas = Seq(0.125, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
-    sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
+    val res = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
         val gamma = 1.0 / (2 * pow(sigma, 2))
         val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
@@ -32,16 +32,16 @@ object Main {
           .split("\n").last
         (sigma, cost, nSV, ein, ecv)
       }
-    }.foreach{
-      case (sigma, cost, nSV, ein, ecv) => {
-        println("================")
-        println("sigma: " + sigma)
-        println("cost: " + cost)
-        println("nSV: " + nSV)
-        println("Ein: " + ein)
-        println("Ecv: " + ecv)
-      }
+    }.flatMap {
+      case (sigma, cost, nSV, ein, ecv) => Seq(
+        "================",
+        "sigma: " + sigma,
+        "cost: " + cost,
+        "nSV: " + nSV,
+        "Ein: " + ein,
+        "Ecv: " + ecv)
     }
+    Resource.fromWriter(new FileWriter("pb14")).writeStrings(res, "\n")
   }
 
   def pb13() = {
