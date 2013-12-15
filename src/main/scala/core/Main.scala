@@ -24,7 +24,10 @@ object Main {
     val costs = Seq(0.001, 1.0, 1000.0)
     val gamma = 1.0 / (2 * pow(0.125, 2))
     val cost = 0.001
+    println("train")
     Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!
+    println("cv")
+    Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!
   }
 
   def pb13() = {
