@@ -13,21 +13,35 @@ object Main {
     val trainLines = Resource.fromFile("hw5_14_train.dat").lines().map(line => {
       val tokens = line.split(" ").filter(_ != "")
       val label = tokens.last.toInt
-      val features = tokens.init.map(_.toDouble).zipWithIndex.filter(_._1 > 0.0).map{
+      val features = tokens.init.map(_.toDouble).zipWithIndex.filter(_._1 > 0.0).map {
         case (f, i) => (i + 1) + ":" + f
       }.mkString(" ")
       label + " " + features
     })
     Resource.fromWriter(new FileWriter("train")).writeStrings(trainLines, "\n")
-    
-    val gammas = Seq(0.125, 0.5, 2.0).map(s => 1.0 / (2 * pow(s, 2)))
+
+    val sigmas = Seq(0.125, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
-    val gamma = 1.0 / (2 * pow(0.125, 2))
-    val cost = 0.001
-    println("train")
-    Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!
-    println("cv")
-    Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!
+    sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
+      case (sigma, cost) => {
+        val gamma = 1.0 / (2 * pow(sigma, 2))
+        val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
+          .split("\n").last
+        val ein = Seq("./svm-predict", "train", "train.m", "predict").!!
+        val ecv = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
+          .split("\n").last
+        (sigma, cost, nSV, ein, ecv)
+      }
+    }.foreach{
+      case (sigma, cost, nSV, ein, ecv) => {
+        println("================")
+        println("sigma: " + sigma)
+        println("cost: " + cost)
+        println("nSV: " + nSV)
+        println("Ein: " + ein)
+        println("Ecv: " + ecv)
+      }
+    }
   }
 
   def pb13() = {
