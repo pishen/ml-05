@@ -127,7 +127,17 @@ object Main {
     }
     writeRes(pb14, "pb14")
     writeRes(pb15, "pb15")
-    writeRes(pb16, "pb16")
+    //print pb16 result
+    val res = pb16.flatMap(t => {
+      "================" ::
+        "sigma: " + t.sigma ::
+        "lambda: " + t.cost ::
+        "nSV/N: " + t.nSVN ::
+        "Ein: " + t.ein ::
+        "Ecv: " + t.ecv ::
+        Nil
+    })
+    Resource.fromWriter(new FileWriter("pb16")).writeStrings(res, "\n")
   }
 
   case class TestCase(sigma: Double, cost: Double, nSVN: Double, ein: Double, ecv: Double)
