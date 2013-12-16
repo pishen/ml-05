@@ -1,11 +1,15 @@
 package core
 
 import breeze.linalg.DenseVector
+import breeze.linalg.diag
+import breeze.linalg.inv
 import math.pow
+import math.exp
 import scalax.io.Resource
 import java.io.FileWriter
 import scala.util.Random
 import sys.process._
+import breeze.linalg.DenseMatrix
 
 object Main {
 
@@ -23,32 +27,33 @@ object Main {
       label + " " + features
     }).toSeq
     Resource.fromWriter(new FileWriter("train")).writeStrings(trainLines, "\n")
+    val tSize = trainLines.size
 
     val sigmas = Seq(0.125, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
     val pb14 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
         val gamma = 1.0 / (2 * pow(sigma, 2))
-        val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
-          .split("\n").last.split(" ").last.toInt
+        val nSVN = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
+          .split("\n").last.split(" ").last.toInt / tSize.toDouble
         val ein = 1 - (Seq("./svm-predict", "train", "train.m", "predict").!!
           .split("\n").last.split(" ").find(_.contains("%")).get.init.toDouble / 100)
         val ecv = 1 - (Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
           .split("\n").last.split(" ").last.init.toDouble / 100)
-        TestCase(sigma, cost, nSV, ein, ecv)
+        TestCase(sigma, cost, nSVN, ein, ecv)
       }
     }
     val pb15 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
         val gamma = 1.0 / (2 * pow(sigma, 2))
         val svmCmd = Seq("./svm-train", "-s", "3", "-p", "0.01", "-c", cost.toString, "-g", gamma.toString)
-        val nSV = (svmCmd ++ Seq("train", "train.m")).!!
-          .split("\n").last.split("[, ]")(2).toInt
+        val nSVN = (svmCmd ++ Seq("train", "train.m")).!!
+          .split("\n").last.split("[, ]")(2).toInt / tSize.toDouble
         val ein = {
           assert(Seq("./svm-predict", "train", "train.m", "predict").! == 0)
           val predicts = Resource.fromFile("predict").lines().map(l => if (l.toDouble > 0.0) 1 else -1).toSeq
           val ys = trainLines.map(_.split(" ").head.toInt)
-          predicts.zip(ys).count(p => p._1 != p._2) / predicts.size.toDouble
+          predicts.zip(ys).count(p => p._1 != p._2) / tSize.toDouble
         }
         val ecv = {
           //TODO shuffle?
@@ -65,7 +70,46 @@ object Main {
             predicts.zip(ys).count(p => p._1 != p._2) / predicts.size.toDouble
           }).sum / subsets.size
         }
-        TestCase(sigma, cost, nSV, ein, ecv)
+        TestCase(sigma, cost, nSVN, ein, ecv)
+      }
+    }
+    val pb16 = {
+      val train = Resource.fromFile("hw5_14_train.dat").lines().toSeq.map(line => {
+        val tokens = line.split(" ").filter(_ != "")
+        val x = DenseVector(tokens.init.map(_.toDouble))
+        val y = tokens.last.toInt
+        (x, y)
+      })
+      sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
+        case (sigma, lambda) => {
+          def kernel(xn: DenseVector[Double], xm: DenseVector[Double]) = {
+            val dis = xn - xm
+            exp(-1 * dis.dot(dis) / (2 * sigma * sigma))
+          }
+          val K = DenseMatrix.tabulate(tSize, tSize)((n, m) => kernel(train(n)._1, train(m)._1))
+          val yv = DenseVector(train.map(_._2.toDouble).toArray)
+          val beta = inv(diag(DenseVector.fill(tSize)(lambda)) + K) * yv
+          val nSVN = beta.toArray.count(_ != 0.0) / tSize.toDouble
+          val ein = train.count {
+            case (x, y) => train.indices.map(i => beta(i) * kernel(train(i)._1, x)).sum * y < 0.0
+          } / tSize.toDouble
+          val ecv = {
+            val subsets = train.grouped((train.size / 5.0).ceil.toInt).toSeq
+            subsets.indices.map(i => {
+              val vld = subsets(i)
+              val subTrain = subsets.zipWithIndex.filter(_._2 != i).map(_._1).reduce(_ ++ _)
+              val subK = DenseMatrix.tabulate(subTrain.size, subTrain.size) {
+                (n, m) => kernel(subTrain(n)._1, subTrain(m)._1)
+              }
+              val subYV = DenseVector(subTrain.map(_._2.toDouble).toArray)
+              val subBeta = inv(diag(DenseVector.fill(subTrain.size)(lambda)) + subK) * subYV
+              vld.count {
+                case (x, y) => subTrain.indices.map(i => subBeta(i) * kernel(subTrain(i)._1, x)).sum * y < 0.0
+              } / vld.size.toDouble
+            }).sum / subsets.size.toDouble
+          }
+          TestCase(sigma, lambda, nSVN, ein, ecv)
+        }
       }
     }
 
@@ -74,22 +118,19 @@ object Main {
         "================" ::
           "sigma: " + t.sigma ::
           "cost: " + t.cost ::
-          "nSV: " + t.nSV ::
+          "nSV/N: " + t.nSVN ::
           "Ein: " + t.ein ::
           "Ecv: " + t.ecv ::
           Nil
       })
       Resource.fromWriter(new FileWriter(filename)).writeStrings(res, "\n")
     }
-    writeRes(pb14, "pb14")
-    writeRes(pb15, "pb15")
+    //writeRes(pb14, "pb14")
+    //writeRes(pb15, "pb15")
+    writeRes(pb16, "pb16")
   }
 
-  case class TestCase(sigma: Double, cost: Double, nSV: Int, ein: Double, ecv: Double)
-
-  def svm(sigma: Double, cost: Double) = {
-
-  }
+  case class TestCase(sigma: Double, cost: Double, nSVN: Double, ein: Double, ecv: Double)
 
   def pb13() = {
     def processData(lines: Seq[String]) = {
