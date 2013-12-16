@@ -31,10 +31,10 @@ object Main {
         val gamma = 1.0 / (2 * pow(sigma, 2))
         val nSV = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
           .split("\n").last.split(" ").last.toInt
-        val ein = Seq("./svm-predict", "train", "train.m", "predict").!!
-          .split("\n").last.split(" ").find(_.contains("%")).get.init.toDouble / 100
-        val ecv = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
-          .split("\n").last.split(" ").last.init.toDouble / 100
+        val ein = 1 - (Seq("./svm-predict", "train", "train.m", "predict").!!
+          .split("\n").last.split(" ").find(_.contains("%")).get.init.toDouble / 100)
+        val ecv = 1 - (Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "-v", "5", "train").!!
+          .split("\n").last.split(" ").last.init.toDouble / 100)
         TestCase(sigma, cost, nSV, ein, ecv)
       }
     }
