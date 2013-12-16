@@ -125,8 +125,8 @@ object Main {
       })
       Resource.fromWriter(new FileWriter(filename)).writeStrings(res, "\n")
     }
-    //writeRes(pb14, "pb14")
-    //writeRes(pb15, "pb15")
+    writeRes(pb14, "pb14")
+    writeRes(pb15, "pb15")
     writeRes(pb16, "pb16")
   }
 
