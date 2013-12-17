@@ -29,7 +29,7 @@ object Main {
     Resource.fromWriter(new FileWriter("train")).writeStrings(trainLines, "\n")
     val tSize = trainLines.size
 
-    val sigmas = Seq(0.025, 0.5, 2.0)
+    val sigmas = Seq(0.125, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
     lazy val pb14 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
@@ -82,6 +82,7 @@ object Main {
       })
       sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
         case (sigma, lambda) => {
+          println("sigma: " + sigma + ", lambda: " + lambda)
           def kernel(xn: DenseVector[Double], xm: DenseVector[Double]) = {
             val dis = xn - xm
             exp(-1 * dis.dot(dis) / (2 * sigma * sigma))
@@ -89,6 +90,7 @@ object Main {
           val K = DenseMatrix.tabulate(tSize, tSize)((n, m) => kernel(train(n)._1, train(m)._1))
           val yv = DenseVector(train.map(_._2.toDouble).toArray)
           val beta = inv(diag(DenseVector.fill(tSize)(lambda)) + K) * yv
+          println("beta: " + beta)
           val nSVN = beta.toArray.count(_ != 0.0) / tSize.toDouble
           val ein = train.count {
             case (x, y) => train.indices.map(i => beta(i) * kernel(train(i)._1, x)).sum * y < 0.0
