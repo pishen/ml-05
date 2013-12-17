@@ -34,6 +34,7 @@ object Main {
     lazy val pb14 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
         val gamma = 1.0 / (2 * pow(sigma, 2))
+        println(gamma.toString + ", " + cost.toString)
         val nSVN = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
           .split("\n").last.split(" ").last.toInt / tSize.toDouble
         val ein = 1 - (Seq("./svm-predict", "train", "train.m", "predict").!!
