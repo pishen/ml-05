@@ -89,9 +89,11 @@ object Main {
           }
           val K = DenseMatrix.tabulate(tSize, tSize)((n, m) => kernel(train(n)._1, train(m)._1))
           println("0, 0 " + K(0, 0))
-          println("0, 1 " + K(0, 1))
           println("1, 0 " + K(1, 0))
           println("1, 1 " + K(1, 1))
+          println("2, 0 " + K(2, 0))
+          println("2, 1 " + K(2, 1))
+          println("2, 2 " + K(2, 2))
           val yv = DenseVector(train.map(_._2.toDouble).toArray)
           val beta = inv(diag(DenseVector.fill(tSize)(lambda)) + K) * yv
           println("beta: " + beta.toArray.take(3).mkString(", "))
