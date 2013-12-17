@@ -118,9 +118,9 @@ object Main {
         "================" ::
           "sigma: " + t.sigma ::
           "cost: " + t.cost ::
-          "nSV/N: " + t.nSVN ::
           "Ein: " + t.ein ::
           "Ecv: " + t.ecv ::
+          "nSV/N: " + t.nSVN ::
           Nil
       })
       Resource.fromWriter(new FileWriter(filename)).writeStrings(res, "\n")
