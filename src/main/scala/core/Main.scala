@@ -29,12 +29,11 @@ object Main {
     Resource.fromWriter(new FileWriter("train")).writeStrings(trainLines, "\n")
     val tSize = trainLines.size
 
-    val sigmas = Seq(0.125, 0.5, 2.0)
+    val sigmas = Seq(0.025, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
     lazy val pb14 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
         val gamma = 1.0 / (2 * pow(sigma, 2))
-        println(gamma.toString + ", " + cost.toString)
         val nSVN = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
           .split("\n").last.split(" ").last.toInt / tSize.toDouble
         val ein = 1 - (Seq("./svm-predict", "train", "train.m", "predict").!!
