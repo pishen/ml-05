@@ -88,15 +88,10 @@ object Main {
             exp(-1 * (dis.dot(dis)) / (2 * sigma * sigma))
           }
           val K = DenseMatrix.tabulate(tSize, tSize)((n, m) => kernel(train(n)._1, train(m)._1))
-          println("0, 0 " + K(0, 0))
-          println("1, 0 " + K(1, 0))
-          println("1, 1 " + K(1, 1))
-          println("2, 0 " + K(2, 0))
-          println("2, 1 " + K(2, 1))
-          println("2, 2 " + K(2, 2))
+          println("7,8 " + K(0, 0))
           val yv = DenseVector(train.map(_._2.toDouble).toArray)
           val beta = inv(diag(DenseVector.fill(tSize)(lambda)) + K) * yv
-          println("beta: " + beta.toArray.take(3).mkString(", "))
+          println("beta: " + beta.toArray.take(6).mkString(", "))
           val nSVN = beta.toArray.count(_ != 0.0) / tSize.toDouble
           val ein = train.count {
             case (x, y) => train.indices.map(i => beta(i) * kernel(train(i)._1, x)).sum * y < 0.0
