@@ -132,9 +132,9 @@ object Main {
       "================" ::
         "sigma: " + t.sigma ::
         "lambda: " + t.cost ::
-        "nSV/N: " + t.nSVN ::
         "Ein: " + t.ein ::
         "Ecv: " + t.ecv ::
+        "nSV/N: " + t.nSVN ::
         Nil
     })
     Resource.fromWriter(new FileWriter("pb16")).writeStrings(res, "\n")
