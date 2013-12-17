@@ -85,7 +85,7 @@ object Main {
           println("sigma: " + sigma + ", lambda: " + lambda)
           def kernel(xn: DenseVector[Double], xm: DenseVector[Double]) = {
             val dis = xn - xm
-            exp(-1 * dis.dot(dis) / (2 * sigma * sigma))
+            exp(-1 * (dis.dot(dis)) / (2 * sigma * sigma))
           }
           val K = DenseMatrix.tabulate(tSize, tSize)((n, m) => kernel(train(n)._1, train(m)._1))
           val yv = DenseVector(train.map(_._2.toDouble).toArray)
