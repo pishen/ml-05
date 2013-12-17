@@ -31,7 +31,7 @@ object Main {
 
     val sigmas = Seq(0.125, 0.5, 2.0)
     val costs = Seq(0.001, 1.0, 1000.0)
-    val pb14 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
+    lazy val pb14 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
         val gamma = 1.0 / (2 * pow(sigma, 2))
         val nSVN = Seq("./svm-train", "-c", cost.toString, "-g", gamma.toString, "train", "train.m").!!
@@ -43,7 +43,7 @@ object Main {
         TestCase(sigma, cost, nSVN, ein, ecv)
       }
     }
-    val pb15 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
+    lazy val pb15 = sigmas.flatMap(sigma => costs.map(cost => (sigma, cost))).map {
       case (sigma, cost) => {
         val gamma = 1.0 / (2 * pow(sigma, 2))
         val svmCmd = Seq("./svm-train", "-s", "3", "-p", "0.01", "-c", cost.toString, "-g", gamma.toString)
@@ -73,7 +73,7 @@ object Main {
         TestCase(sigma, cost, nSVN, ein, ecv)
       }
     }
-    val pb16 = {
+    lazy val pb16 = {
       val train = Resource.fromFile("hw5_14_train.dat").lines().toSeq.map(line => {
         val tokens = line.split(" ").filter(_ != "")
         val x = DenseVector(tokens.init.map(_.toDouble))
@@ -126,9 +126,9 @@ object Main {
       Resource.fromWriter(new FileWriter(filename)).writeStrings(res, "\n")
     }
     writeRes(pb14, "pb14")
-    writeRes(pb15, "pb15")
+    //writeRes(pb15, "pb15")
     //print pb16 result
-    val res = pb16.flatMap(t => {
+    /*val res = pb16.flatMap(t => {
       "================" ::
         "sigma: " + t.sigma ::
         "lambda: " + t.cost ::
@@ -137,7 +137,7 @@ object Main {
         "nSV/N: " + t.nSVN ::
         Nil
     })
-    Resource.fromWriter(new FileWriter("pb16")).writeStrings(res, "\n")
+    Resource.fromWriter(new FileWriter("pb16")).writeStrings(res, "\n")*/
   }
 
   case class TestCase(sigma: Double, cost: Double, nSVN: Double, ein: Double, ecv: Double)
