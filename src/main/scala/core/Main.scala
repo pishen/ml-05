@@ -127,10 +127,10 @@ object Main {
       })
       Resource.fromWriter(new FileWriter(filename)).writeStrings(res, "\n")
     }
-    writeRes(pb14, "pb14")
+    //writeRes(pb14, "pb14")
     //writeRes(pb15, "pb15")
     //print pb16 result
-    /*val res = pb16.flatMap(t => {
+    val res = pb16.flatMap(t => {
       "================" ::
         "sigma: " + t.sigma ::
         "lambda: " + t.cost ::
@@ -139,7 +139,7 @@ object Main {
         "nSV/N: " + t.nSVN ::
         Nil
     })
-    Resource.fromWriter(new FileWriter("pb16")).writeStrings(res, "\n")*/
+    Resource.fromWriter(new FileWriter("pb16")).writeStrings(res, "\n")
   }
 
   case class TestCase(sigma: Double, cost: Double, nSVN: Double, ein: Double, ecv: Double)
