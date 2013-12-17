@@ -90,7 +90,7 @@ object Main {
           val K = DenseMatrix.tabulate(tSize, tSize)((n, m) => kernel(train(n)._1, train(m)._1))
           val yv = DenseVector(train.map(_._2.toDouble).toArray)
           val beta = inv(diag(DenseVector.fill(tSize)(lambda)) + K) * yv
-          println("beta: " + beta.toArray.take(3))
+          println("beta: " + beta.toArray.take(3).mkString(", "))
           val nSVN = beta.toArray.count(_ != 0.0) / tSize.toDouble
           val ein = train.count {
             case (x, y) => train.indices.map(i => beta(i) * kernel(train(i)._1, x)).sum * y < 0.0
